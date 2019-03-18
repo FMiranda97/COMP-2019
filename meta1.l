@@ -1,77 +1,107 @@
+/*
+Francisco Miranda	2015250590
+Jonas Rua		2016218077
+*/
 %X COMENTARIO
+%X STRING
+%X COMMENT
+
 num			[0-9]+
 hexa			[a-fA-f]+
 letra			[a-zA-Z]+
 exp			(e|E)("+"|"-")?{num}+
-whitespace		" "|"\n"|"\t"
-comment			"//".*
+whitespace		" "|"\t"
+strlit			(.^["\n""\"""\r""\\"])*
 id			(_|{letra})(_|{letra}|{num})*
 intlit			{num}|0(x|X)({num}|{hexa})*
 reallit			{num}+"."{num}*{exp}?|{num}*{exp}|{num}*"."{num}+{exp}?
-strlit			\".*\"
-reserved		"++"|"--"|break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var	
-%%	
-"/*"						{BEGIN COMENTARIO;}
-<COMENTARIO>[^"/*"]				{;}
-<COMENTARIO>"*/"				{BEGIN 0; printf("\n");}
-{whitespace}|{comment}				{;} \
-;						{printf("SEMICOLON\n");}
-_						{printf("BLANKID\n");}
-package						{printf("PACKAGE\n");}
-return						{printf("RETURN\n");}
-return"\n"					{printf("RETURN\nSEMICOLON\n");}
-&&						{printf("AND\n");}
-=						{printf("ASSIGN\n");}
-"*"						{printf("STAR\n");}
-,						{printf("COMMA\n");}
-"/"						{printf("DIV\n");}
-==						{printf("EQ\n");}
->=						{printf("GE\n");}
->						{printf("GT\n");}
-"{"						{printf("LBRACE\n");}
-"<="						{printf("LE\n");}
-"("						{printf("LPAR\n");}
-"["						{printf("LSQ\n");}
-"<"						{printf("LT\n");}
-"-"						{printf("MINUS\n");}
-"%"						{printf("MOD\n");}
-!=						{printf("NE\n");}
-!						{printf("NOT\n");}
-"||"						{printf("OR\n");}
-"+"						{printf("PLUS\n");}
-"}"						{printf("RBRACE\n");}
-")"						{printf("RPAR\n");}
-"]"						{printf("RSQ\n");}
-"}""\n"						{printf("RBRACE\nSEMICOLON\n");}
-")""\n"						{printf("RPAR\nSEMICOLON\n");}
-"]""\n"						{printf("RSQ\nSEMICOLON\n");}
-else						{printf("ELSE\n");}
-for						{printf("FOR\n");}
-if						{printf("IF\n");}
-var						{printf("VAR\n");}
-int						{printf("INT\n");}
-float32						{printf("FLOAT32\n");}	
-bool						{printf("BOOL\n");}
-string						{printf("STRING\n");}
-fmt"."Println					{printf("PRINT\n");}
-strconv"."Atoi					{printf("PARSEINT\n");}
-func						{printf("FUNC\n");}
-os"."Args					{printf("CMDARGS\n");}
-{reserved}					{printf("RESERVED\n");}
-{id}						{printf("ID(%s)\n", yytext);}
-{id}"\n"					{printf("ID(%.*s)\nSEMICOLON\n", yyleng-1, yytext);}
-{intlit}					{printf("INTLIT(%s)\n", yytext);}
-{intlit}"\n"			{printf("INTLIT(%.*s)\nSEMICOLON\n", yyleng-1, yytext);}
-{reallit}					{printf("REALLIT(%s)\n", yytext);}
-{reallit}"\n"					{printf("REALLIT(%.*s)\nSEMICOLON\n", yyleng-1, yytext);}
-{strlit}					{printf("STRLIT(%s)\n", yytext);}
-{strlit}"\n"					{printf("STRLIT(%.*s)\nSEMICOLON\n", yyleng-1, yytext);}
+reserved		"++"|"--"|break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var
+
+%{
+int column = 1;
+int aux_column;
+int line = 1;
+int aux_line;
+char flag = 'a';
+%}
+
 %%
-int main()
+"//"						{BEGIN COMMENT; column+= yyleng;}
+<COMMENT>"\n"|"\r"|"\r\n"			{BEGIN 0; line++; column=1;}
+<COMMENT>.					{column+=yyleng;}
+
+"/*"						{BEGIN COMENTARIO;aux_column = column;aux_line = line;}
+<COMENTARIO>"*/"				{BEGIN 0; if (flag == 'l') printf("\n");column+=yyleng;}
+<COMENTARIO>"\n"|"\r"|"\r\n"			{line++;column=1;}
+<COMENTARIO>.					{column+=yyleng;}
+<COMENTARIO><<EOF>>				{printf("Line %d, Column %d: unterminated comment\n",aux_line,aux_column); BEGIN 0;}
+
+"\""						{BEGIN STRING; if (flag == 'l') printf("STRLIT("); aux_line = line; aux_column = column; column+=yyleng;}
+<STRING>"\\r"|"\n"|"\\t"|"\\f"|\\\\|\\\"	{if (flag == 'l') printf("%s", yytext);}
+<STRING>\\[^{num}]				{printf("Line %d, column %d: invalid escape sequence\n",line,column); column+=yyleng;}
+<STRING>"\n"|"\r"|"\r\n"			{BEGIN 0; printf("Line %d, column %d: unterminated string literal\n",aux_line,aux_column); line++;column = 1;}
+<STRING>"\""					{BEGIN 0; if (flag == 'l') printf(")\n");column+=yyleng;}
+<STRING><<EOF>>					{printf("Line %d, Column %d: unterminated string literal\n",aux_line,aux_column); BEGIN 0;}
+<STRING>.					{if (flag == 'l') printf("%s", yytext);}
+
+{whitespace}					{column++;}
+"\n"|"\r\n"|"\r"				{line++;column=1;}
+;						{if (flag == 'l') printf("SEMICOLON\n");column+=yyleng;}
+_						{if (flag == 'l') printf("BLANKID\n");column+=yyleng;}
+package						{if (flag == 'l') printf("PACKAGE\n");column+=yyleng;}
+return						{if (flag == 'l') printf("RETURN\n");column+=yyleng;}
+&&						{if (flag == 'l') printf("AND\n");column+=yyleng;}
+=						{if (flag == 'l') printf("ASSIGN\n");column+=yyleng;}
+"*"						{if (flag == 'l') printf("STAR\n");column+=yyleng;}
+","						{if (flag == 'l') printf("COMMA\n");column+=yyleng;}
+"/"						{if (flag == 'l') printf("DIV\n");column+=yyleng;}
+"=="						{if (flag == 'l') printf("EQ\n");column+=yyleng;}
+">="						{if (flag == 'l') printf("GE\n");column+=yyleng;}
+">"						{if (flag == 'l') printf("GT\n");column+=yyleng;}
+"{"						{if (flag == 'l') printf("LBRACE\n");column+=yyleng;}
+"<="						{if (flag == 'l') printf("LE\n");column+=yyleng;}
+"("						{if (flag == 'l') printf("LPAR\n");column+=yyleng;}
+"["						{if (flag == 'l') printf("LSQ\n");column+=yyleng;}
+"<"						{if (flag == 'l') printf("LT\n");column+=yyleng;}
+"-"						{if (flag == 'l') printf("MINUS\n");column+=yyleng;}
+"%"						{if (flag == 'l') printf("MOD\n");column+=yyleng;}
+"!="						{if (flag == 'l') printf("NE\n");column+=yyleng;}
+"!"						{if (flag == 'l') printf("NOT\n");column+=yyleng;}
+"||"						{if (flag == 'l') printf("OR\n");column+=yyleng;}
+"+"						{if (flag == 'l') printf("PLUS\n");column+=yyleng;}
+"}"						{if (flag == 'l') printf("RBRACE\n");column+=yyleng;}
+")"						{if (flag == 'l') printf("RPAR\n");column+=yyleng;}
+"]"						{if (flag == 'l') printf("RSQ\n");column+=yyleng;}
+else						{if (flag == 'l') printf("ELSE\n");column+=yyleng;}
+for						{if (flag == 'l') printf("FOR\n");column+=yyleng;}
+if						{if (flag == 'l') printf("IF\n");column+=yyleng;}
+var						{if (flag == 'l') printf("VAR\n");column+=yyleng;}
+int						{if (flag == 'l') printf("INT\n");column+=yyleng;}
+float32						{if (flag == 'l') printf("FLOAT32\n");column+=yyleng;}	
+bool						{if (flag == 'l') printf("BOOL\n");column+=yyleng;}
+string						{if (flag == 'l') printf("STRING\n");column+=yyleng;}
+fmt"."Println					{if (flag == 'l') printf("PRINT\n");column+=yyleng;}
+strconv"."Atoi					{if (flag == 'l') printf("PARSEINT\n");column+=yyleng;}
+func						{if (flag == 'l') printf("FUNC\n");column+=yyleng;}
+os"."Args					{if (flag == 'l') printf("CMDARGS\n");column+=yyleng;}
+{reserved}					{if (flag == 'l') printf("RESERVED\n");column+=yyleng;}
+{id}						{if (flag == 'l') printf("ID(%s)\n", yytext);column+=yyleng;}
+{intlit}					{if (flag == 'l') printf("INTLIT(%s)\n", yytext);column+=yyleng;}
+{reallit}					{if (flag == 'l') printf("REALLIT(%s)\n", yytext);column+=yyleng;}
+.						{printf("Line %d, column %d: illegal character (%c)\n",line,column,*yytext);column++;}
+
+
+%%
+int main(int argc, char** argv)
 {
-	yylex();
-	return 0;
+    if(argc > 1 && argv[1][0] == '-') {
+        flag = argv[1][1]; //flag is 'l'?
+    }
+    
+    yylex();
+    return 0;
 }
+
 int yywrap()
 {
 	return 1;
