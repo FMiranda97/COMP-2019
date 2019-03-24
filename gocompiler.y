@@ -1,8 +1,10 @@
 %{
     /*#include "structs.h"  
-
+	
     node root;
     char printFlag = 'Y';*/
+	int yylex(void);
+	void yyerror (char *s);
 %}
 
 %token SEMICOLON
@@ -33,6 +35,7 @@
 %token RSQ
 %token ELSE
 %token FOR
+%token IF
 %token VAR
 %token INT
 %token FLOAT32
@@ -48,6 +51,15 @@
 %token STRLIT
 %token RESERVED
 
+%left COMMA //???
+%right ASSIGN
+%left OR
+%left AND
+%left EQ NE
+%left GE GT LE LT
+%left PLUS MINUS
+%left STAR DIV MOD
+%right NOT
 
 
 
@@ -59,8 +71,7 @@
 
 %%
 
-Program: PACKAGE ID SEMICOLON declarations
-	| PACKAGE ID SEMICOLON
+Program: PACKAGE ID SEMICOLON Declarations
 	;
 
 Declarations: /*empty*/
@@ -86,7 +97,7 @@ Type: INT
 	| STRING
 	;
 
-FuncDeclaration: FUNC ID LPAR Parameters RPAR Type FuncBody //opcional
+FuncDeclaration: FUNC ID LPAR Parameters RPAR Type FuncBody 
 	| FUNC ID LPAR RPAR Type FuncBody
 	| FUNC ID LPAR Parameters RPAR FuncBody
 	| FUNC ID LPAR RPAR FuncBody
@@ -126,6 +137,7 @@ Statement: ID ASSIGN Expr //statement1
 	| ParseArgs
 	| PRINT LPAR Expr RPAR //statement7
 	| PRINT LPAR STRLIT RPAR
+	| error
 	;
 
 Ss: Ss Statement SEMICOLON //statement semicolon for Statements
@@ -133,11 +145,13 @@ Ss: Ss Statement SEMICOLON //statement semicolon for Statements
 	;
 
 ParseArgs: ID COMMA BLANKID ASSIGN PARSEINT LPAR CMDARGS LSQ Expr RSQ RPAR
+	| ID COMMA BLANKID ASSIGN PARSEINT LPAR error RPAR
 	;
 
 FuncInvocation: ID LPAR RPAR
 	| ID LPAR Expr RPAR
-	| ID LPAR Expr Ce Rpar
+	| ID LPAR Expr Ce RPAR
+	| ID LPAR error RPAR
 	;
 
 Ce: Ce COMMA Expr //comma expr for funcinvocation
@@ -165,6 +179,7 @@ Expr: Expr OR Expr //Expr1
 	| ID
 	| FuncInvocation
 	| LPAR Expr RPAR
+	| LPAR error RPAR //here or separate expression?
 	;
 
 
