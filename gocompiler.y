@@ -1,10 +1,7 @@
 %{
-    /*#include "structs.h"  
-	
+    #include "structs.h"  
     node root;
-    char printFlag = 'Y';*/
-	int yylex(void);
-	void yyerror (char *s);
+    int print = 1;
 %}
 
 %token SEMICOLON
@@ -45,11 +42,37 @@
 %token PARSEINT
 %token FUNC
 %token CMDARGS
-%token ID
-%token INTLIT
-%token REALLIT
-%token STRLIT
-%token RESERVED
+%token <value> ID
+%token <value> INTLIT
+%token <value> REALLIT
+%token <value> STRLIT
+%token <value> RESERVED
+
+
+%union {
+    char* value;
+    struct _tree_node* no;
+}
+
+
+%type <no> Program
+%type <no> Declarations
+%type <no> VarDeclaration
+%type <no> VarSpec
+%type <no> Ci
+%type <no> Type
+%type <no> FuncDeclaration
+%type <no> Parameters
+%type <no> Cit
+%type <no> FuncBody
+%type <no> VarsAndStatements
+%type <no> Statement
+%type <no> Ss
+%type <no> ParseArgs
+%type <no> FuncInvocation
+%type <no> Ce
+%type <no> Expr
+
 
 %left COMMA //???
 %right ASSIGN
@@ -61,125 +84,126 @@
 %left STAR DIV MOD
 %right NOT
 
-
-
-/*
-%union {
-    char* id;
-    struct _tree_node* no;
-}*/
-
 %%
 
-Program: PACKAGE ID SEMICOLON Declarations
+Program: PACKAGE ID SEMICOLON Declarations	{if(flag == 't'){ root = createNode("Program"); addChild(root, $4); $$ = root; if(print == 1) printTree(root, 0); else freeTree(root);}; }
+	| PACKAGE ID SEMICOLON			{if(flag == 't'){$$ = createNodeTerminal("Id", $2); free($2);};}
 	;
 
-Declarations: /*empty*/
-	| Declarations VarDeclaration SEMICOLON 
-	| Declarations FuncDeclaration SEMICOLON
+Declarations: Declarations VarDeclaration SEMICOLON 	{if(flag == 't'){addSibling($1, $2); $$ = $1;};}
+	| Declarations FuncDeclaration SEMICOLON	{if(flag == 't'){addSibling($1, $2); $$ = $1;};}
+	| VarDeclaration SEMICOLON 			{if(flag == 't'){$$ = $1;};}
+	| FuncDeclaration SEMICOLON 			{if(flag == 't'){$$ = $1;};}
 	;
 
-VarDeclaration: VAR VarSpec
-	| VAR LPAR VarSpec SEMICOLON RPAR
+VarDeclaration: VAR VarSpec				{if(flag == 't'){$$ = createNode("VarDecl"); addChild($$, $2);};} //??
+	| VAR LPAR VarSpec SEMICOLON RPAR		{if(flag == 't'){$$ = createNode("VarDecl"); addChild($$, $3);};}
 	;
 
-VarSpec: ID Ci Type
-	| ID Type
+VarSpec: ID Ci Type					{if(flag == 't'){addSibling($$, $2); $$ = $3; addSibling($$, createNodeTerminal("Id", $1)); free($1);}; }
+	| ID Type					{if(flag == 't'){$$ = $2; addSibling($$, createNodeTerminal("Id", $1)); free($1);}; } //segfault here
 	;
 
-Ci: COMMA ID Ci  //comma id for varspec
-	| COMMA ID
+//comma id for varspec
+Ci: COMMA ID Ci  					{if(flag == 't'){$$ = createNodeTerminal("ID", $2); addSibling($$, $3);};}			
+	| COMMA ID					{if(flag == 't'){$$ = createNodeTerminal("ID", $2); };}
 	;
 
-Type: INT
-	| FLOAT32
-	| BOOL
-	| STRING
+Type: INT						{if(flag == 't'){$$ = createNode("Int");};}
+	| FLOAT32					{if(flag == 't'){$$ = createNode("Float32");};}
+	| BOOL						{if(flag == 't'){$$ = createNode("Bool");};}
+	| STRING					{if(flag == 't'){$$ = createNode("String");};}
 	;
 
-FuncDeclaration: FUNC ID LPAR Parameters RPAR Type FuncBody 
-	| FUNC ID LPAR RPAR Type FuncBody
-	| FUNC ID LPAR Parameters RPAR FuncBody
-	| FUNC ID LPAR RPAR FuncBody
+
+FuncDeclaration: FUNC ID LPAR Parameters RPAR Type FuncBody 	{if(flag == 't'){$$ = createNode("FuncDecl"); $$->child = createNode("FuncHeader"); addChild($$->child, createNodeTerminal("Id", $2)); 											free($2); addSibling($$->child->child, $6); addSibling($$->child->child, $4); addSibling($$->child, $7);}; }
+	| FUNC ID LPAR Parameters RPAR FuncBody			{if(flag == 't'){$$ = createNode("FuncDecl"); $$->child = createNode("FuncHeader"); addChild($$->child, createNodeTerminal("Id", $2)); 											free($2);  addSibling($$->child->child, $4); addSibling($$->child, $6);};}
 	;
 
-Parameters: ID Type Cit
-	| ID Type
+Parameters: /*empty*/						{if(flag == 't') $$ = createNode("FuncParams");}
+	| ID Type Cit						{if(flag == 't'){$$ = createNode("FuncParams"); $$->child = createNode("ParamDecl"); $$->child->child = $2; 												addSibling($$->child->child, createNodeTerminal("Id", $1)); addSibling($$->child, $3);}; }
+	| ID Type						{if(flag == 't'){$$ = createNode("FuncParams"); $$->child = createNode("ParamDecl"); $$->child->child = $2; 																addSibling($$->child->child, createNodeTerminal("Id", $1));}; }
 	;
 
-Cit: Cit COMMA ID Type //comma id type for parameters
-	| COMMA ID Type
+//comma id type for parameters
+Cit: Cit COMMA ID Type 						{if(flag == 't'){$$ = createNode("ParamDecl"); $$->child = $4; addSibling($$->child, createNodeTerminal("Id", $3)); addSibling($$, $1);};}
+	| COMMA ID Type						{if(flag == 't'){$$ = createNode("ParamDecl"); $$->child = $3; addSibling($$->child, createNodeTerminal("Id", $2));};}
 	;
 		
-FuncBody: LBRACE VarsAndStatements RBRACE
+FuncBody: LBRACE VarsAndStatements RBRACE			{if(flag == 't'){$$ = createNode("FuncBody");};}
+	| LBRACE RBRACE						{if(flag == 't'){$$ = createNode("FuncBody");};}
 	;
 
-VarsAndStatements:/*empty*/
-	| VarsAndStatements VarDeclaration SEMICOLON //loop interminavel?
-	| VarsAndStatements Statement SEMICOLON
-	| VarsAndStatements SEMICOLON
+VarsAndStatements: VarsAndStatements VarDeclaration SEMICOLON 		{if(flag == 't'){};}
+	| VarsAndStatements Statement SEMICOLON			{if(flag == 't'){};}
+	| VarsAndStatements SEMICOLON				{if(flag == 't'){};}
+	| VarDeclaration SEMICOLON 				{if(flag == 't'){};}
+	| Statement SEMICOLON					{if(flag == 't'){};}
+	| SEMICOLON						{if(flag == 't'){};}
 	;
 
-Statement: ID ASSIGN Expr //statement1
-	| LBRACE Ss RBRACE //statement2
-	| LBRACE RBRACE
-	| IF Expr LBRACE Ss RBRACE //statement3
-	| IF Expr LBRACE RBRACE
-	| IF Expr LBRACE Ss RBRACE ELSE LBRACE Ss RBRACE
-	| IF Expr LBRACE RBRACE	ELSE LBRACE RBRACE
-	| FOR Expr LBRACE Ss RBRACE //statement4
-	| FOR LBRACE Ss RBRACE
-	| FOR Expr LBRACE RBRACE
-	| FOR LBRACE RBRACE
-	| RETURN Expr//statement5	
-	| RETURN
-	| FuncInvocation //statement6
-	| ParseArgs
-	| PRINT LPAR Expr RPAR //statement7
-	| PRINT LPAR STRLIT RPAR
-	| error
+Statement: ID ASSIGN Expr 					{if(flag == 't'){};}
+	| LBRACE Ss RBRACE 					{if(flag == 't'){};}
+	| LBRACE RBRACE						{if(flag == 't'){$$ = NULL;};}
+	| IF Expr LBRACE Ss RBRACE 				{if(flag == 't'){};}
+	| IF Expr LBRACE RBRACE					{if(flag == 't'){};}
+	| IF Expr LBRACE Ss RBRACE ELSE LBRACE Ss RBRACE	{if(flag == 't'){};}
+	| IF Expr LBRACE RBRACE	ELSE LBRACE RBRACE		{if(flag == 't'){};}
+	| FOR Expr LBRACE Ss RBRACE 				{if(flag == 't'){};}
+	| FOR LBRACE Ss RBRACE					{if(flag == 't'){};}
+	| FOR Expr LBRACE RBRACE				{if(flag == 't'){};}
+	| FOR LBRACE RBRACE					{if(flag == 't'){};}
+	| RETURN Expr						{if(flag == 't'){};}
+	| RETURN						{if(flag == 't'){};}
+	| FuncInvocation 					{if(flag == 't'){};}
+	| ParseArgs						{if(flag == 't'){};}
+	| PRINT LPAR Expr RPAR 					{if(flag == 't'){};}
+	| PRINT LPAR STRLIT RPAR				{if(flag == 't'){};}
+	| error							{print = 0; if(flag == 't'){$$ = NULL;};}
 	;
 
-Ss: Ss Statement SEMICOLON //statement semicolon for Statements
-	| Statement SEMICOLON
+//statement semicolon for Statements
+Ss: Ss Statement SEMICOLON 					{if(flag == 't'){};}
+	| Statement SEMICOLON					{if(flag == 't'){};}
 	;
 
-ParseArgs: ID COMMA BLANKID ASSIGN PARSEINT LPAR CMDARGS LSQ Expr RSQ RPAR
-	| ID COMMA BLANKID ASSIGN PARSEINT LPAR error RPAR
+ParseArgs: ID COMMA BLANKID ASSIGN PARSEINT LPAR CMDARGS LSQ Expr RSQ RPAR 	{if(flag == 't'){};}
+	| ID COMMA BLANKID ASSIGN PARSEINT LPAR error RPAR			{print = 0; if(flag == 't'){$$ = NULL;};}
 	;
 
-FuncInvocation: ID LPAR RPAR
-	| ID LPAR Expr RPAR
-	| ID LPAR Expr Ce RPAR
-	| ID LPAR error RPAR
+FuncInvocation: ID LPAR RPAR					{if(flag == 't'){};}
+	| ID LPAR Expr RPAR					{if(flag == 't'){};}
+	| ID LPAR Expr Ce RPAR					{if(flag == 't'){};}
+	| ID LPAR error RPAR					{print = 0; if(flag == 't'){$$ = NULL;};}
 	;
 
-Ce: Ce COMMA Expr //comma expr for funcinvocation
-	| COMMA Expr
+//comma expr for funcinvocation
+Ce: Ce COMMA Expr				 		{if(flag == 't'){};}
+	| COMMA Expr						{if(flag == 't'){};}
 	;
 
-Expr: Expr OR Expr //Expr1
-	| Expr AND Expr
-	| Expr LT Expr //Expr2
-	| Expr GT Expr 
-	| Expr EQ Expr 
-	| Expr NE Expr 
-	| Expr LE Expr 
-	| Expr GE Expr 
-	| Expr PLUS Expr //Expr3
-	| Expr MINUS Expr 
-	| Expr STAR Expr 
-	| Expr DIV Expr 
-	| Expr MOD Expr 
-	| NOT Expr //Expr4
-	| MINUS Expr 
-	| PLUS Expr 
-	| INTLIT //Expr5
-	| REALLIT
-	| ID
-	| FuncInvocation
-	| LPAR Expr RPAR
-	| LPAR error RPAR //here or separate expression?
+Expr: Expr OR Expr 						{if(flag == 't'){};}
+	| Expr AND Expr						{if(flag == 't'){};}
+	| Expr LT Expr 						{if(flag == 't'){};}
+	| Expr GT Expr 						{if(flag == 't'){};}
+	| Expr EQ Expr 						{if(flag == 't'){};}
+	| Expr NE Expr 						{if(flag == 't'){};}
+	| Expr LE Expr 						{if(flag == 't'){};}
+	| Expr GE Expr 						{if(flag == 't'){};}
+	| Expr PLUS Expr 					{if(flag == 't'){};}
+	| Expr MINUS Expr 					{if(flag == 't'){};}
+	| Expr STAR Expr 					{if(flag == 't'){};}
+	| Expr DIV Expr 					{if(flag == 't'){};}
+	| Expr MOD Expr 					{if(flag == 't'){};}
+	| NOT Expr 						{if(flag == 't'){};}
+	| MINUS Expr 						{if(flag == 't'){};}
+	| PLUS Expr 						{if(flag == 't'){};}
+	| INTLIT 						{if(flag == 't'){};}
+	| REALLIT						{if(flag == 't'){};}
+	| ID							{if(flag == 't'){};}
+	| FuncInvocation					{if(flag == 't'){};}
+	| LPAR Expr RPAR					{if(flag == 't'){};}
+	| LPAR error RPAR /*here or separate expression?*/	{print = 0; if(flag == 't'){$$ = NULL;};}
 	;
 
 
