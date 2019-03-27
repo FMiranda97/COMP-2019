@@ -1,112 +1,98 @@
 #include "structs.h"
 
-node createNode(char* tagValue) {
+node criarNo(char* string) {
     node no = (node)malloc(sizeof(tree_node));
-    no->tag = (char*)malloc((strlen(tagValue) + 1) * sizeof(char));
-    strcpy(no->tag, tagValue);
-    no->child = NULL;
-    no->sibling = NULL;
+    no->tag = (char*)malloc((strlen(string) + 1) * sizeof(char));
+    strcpy(no->tag, string);
+    no->filho = NULL;
+    no->irmao = NULL;
     return no;
 }
 
-node createNodeEmpty() {
+node criarNoVazio() {
     node no = (node)malloc(sizeof(tree_node));
     no->tag = NULL;
-    no->child = NULL;
-    no->sibling = NULL;
+    no->filho = NULL;
+    no->irmao = NULL;
     return no;
 }
 
-node createNodeTerminal(char* tagValue, char* value) {
+node criarNoTerminal(char* string, char* valor) {
     node no = (node)malloc(sizeof(tree_node));
-    no->tag = (char*)malloc((strlen(tagValue) + strlen(value) + 3) * sizeof(char));
-    sprintf(no->tag, "%s%c%s%c", tagValue, '(', value, ')');
-    no->child = NULL;
-    no->sibling = NULL;
+    if (valor != NULL) {
+        no->tag = (char*)malloc((strlen(string) + strlen(valor) + 3) * sizeof(char));
+	sprintf(no->tag, "%s%c%s%c", string, '(', valor, ')');
+    } else {
+	no->tag = (char*)malloc((strlen(string) + 3) * sizeof(char));
+	sprintf(no->tag, "%s%c%c", string, '(', ')');
+    }
+    no->filho = NULL;
+    no->irmao = NULL;
     return no;
 }
 
-void addChild(node father, node son) {
-    if(father == NULL)
+void criarFilho(node pai, node filho) {
+    if(pai == NULL)
         return;
-    father->child = son;
+    pai->filho = filho;
 }
 
-void addNullChild(node father) {
-    node aux;
-    aux = (node) malloc(sizeof(tree_node));
-    aux->tag = (char*) malloc(5*sizeof(char));
-    strcpy(aux->tag, "Null");
-    aux->child = NULL;
-    aux->sibling = NULL;
-
-    father->child = aux;
-}
-
-void addSibling(node sibling1, node sibling2) {
-    if(sibling1 == NULL || sibling2 == NULL) {
+void criarIrmao(node a, node b) {
+    if(a == NULL || b == NULL) {
         return;
     }
-    while(sibling1->sibling != NULL) {
-        sibling1 = sibling1->sibling;
+    while(a->irmao != NULL) {
+        a = a->irmao;
     }
-    sibling1->sibling = sibling2;
+    a->irmao = b;
 }
 
-void typeSpecDef(node up, node type) {
-    if(up == NULL) {
+void typeIrmaos(node pai, node type) {
+    if(pai == NULL) {
         return;
     }
-    node aux_sib = createNodeEmpty();
-    aux_sib->tag = (char*)malloc((strlen(up->child->tag) + 1) * sizeof(char)); 
-    strcpy(aux_sib->tag, up->child->tag);
-    up->child->sibling = aux_sib; /*mover child para sibling*/
+    node aux_sib = criarNoVazio();
+    aux_sib->tag = (char*)malloc((strlen(pai->filho->tag) + 1) * sizeof(char)); 
+    strcpy(aux_sib->tag, pai->filho->tag);
+    pai->filho->irmao = aux_sib; /*mover filho para irmao*/
 
-    up->child->tag = (char*)malloc((strlen(type->tag) + 1) * sizeof(char));
-    strcpy(up->child->tag, type->tag);
-    typeSpecDef(up->sibling, type);
+    pai->filho->tag = (char*)malloc((strlen(type->tag) + 1) * sizeof(char));
+    strcpy(pai->filho->tag, type->tag);
+    typeIrmaos(pai->irmao, type);
 }
 
-void printTree(node root, int level) {
+void printTree(node raiz, int profundidade) {
     int aux;
-    if(root == NULL) {
+    if(raiz == NULL) {
         return;
     }
     else {
-        for(aux = 0; aux < level; aux++) {
+        for(aux = 0; aux < profundidade; aux++) {
             printf("..");
         }
-        printf("%s\n", root->tag);
+        printf("%s\n", raiz->tag);
         
     }
-    printTree(root->child, level + 1);
-    printTree(root->sibling, level);
+    printTree(raiz->filho, profundidade + 1);
+    printTree(raiz->irmao, profundidade);
 
-    free(root->tag);
-    free(root->child);
-    free(root->sibling);
-    if(level == 0) {
-        free(root);
+    free(raiz->tag);
+    free(raiz->filho);
+    free(raiz->irmao);
+    if(profundidade == 0) {
+        free(raiz);
     }
 }
 
-void freeTree(node root) {
-    if(root == NULL) {
+void freeTree(node raiz) {
+    if(raiz == NULL) {
         return;
     }
-    freeTree(root->child);
-    freeTree(root->sibling);
+    freeTree(raiz->filho);
+    freeTree(raiz->irmao);
     
-    free(root->tag);
-    free(root->child);
-    free(root->sibling);
+    free(raiz->tag);
+    free(raiz->filho);
+    free(raiz->irmao);
 }
 
-node checkNull(node no) {
-    if(no != NULL) {
-        return no;
-    }
-    else {
-        return createNode("Null");
-    }
-}

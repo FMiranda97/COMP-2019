@@ -5,21 +5,19 @@
 typedef struct _tree_node* node;
 typedef struct _tree_node{
     char* tag;
-    node child;
-    node sibling;
+    node filho;
+    node irmao;
 }tree_node;
 
 int yylex(void);
-void yyerror (char *s);
-node createNode(char* tagValue);
-node createNodeEmpty();
-node createNodeTerminal(char* tagValue, char* value);
-void addChild(node father, node son);
-void addNullChild(node father);
-void addSibling(node sibling1, node sibling2);
-void typeSpecDef(node up, node type);
-void printTree(node root, int level);
-void freeTree(node root);
-node checkNull(node no);
+void yyerror (char*);
+node criarNo(char* );
+node criarNoEmpty();
+node criarNoTerminal(char* , char* );
+void criarFilho(node , node );
+void criarIrmao(node , node );
+void typeIrmaos(node , node );
+void printTree(node , int );
+void freeTree(node );
 
 extern char flag;
