@@ -19,5 +19,7 @@ void criarIrmao(node , node );
 void typeIrmaos(node , node );
 void printTree(node , int );
 void freeTree(node );
+node verificaErro(node no);
 
+extern int print;
 extern char flag;

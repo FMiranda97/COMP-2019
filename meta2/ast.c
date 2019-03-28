@@ -63,16 +63,17 @@ void typeIrmaos(node pai, node type) {
 
 void printTree(node raiz, int profundidade) {
     int aux;
+    while (raiz != NULL && strcmp(raiz->tag, "Erro") == 0){
+	raiz = raiz->irmao;
+    }
     if(raiz == NULL) {
         return;
-    }
-    else {
-        for(aux = 0; aux < profundidade; aux++) {
+    } else if (strcmp(raiz->tag, "Erro") != 0) {
+	for(aux = 0; aux < profundidade; aux++) {
             printf("..");
         }
         printf("%s\n", raiz->tag);
-        
-    }
+    } 
     printTree(raiz->filho, profundidade + 1);
     printTree(raiz->irmao, profundidade);
 
@@ -94,5 +95,14 @@ void freeTree(node raiz) {
     free(raiz->tag);
     free(raiz->filho);
     free(raiz->irmao);
+}
+
+node verificaErro(node no) {
+    if(no == NULL) {
+        return criarNo("Erro");
+    }
+    else {
+        return no;
+    }
 }
 
