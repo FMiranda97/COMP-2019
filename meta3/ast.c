@@ -1,0 +1,116 @@
+#include "structs.h"
+
+node criarNo(char* string, tokenInfo info) {
+    node no = (node)malloc(sizeof(tree_node));
+    no->tag = (char*)malloc((strlen(string) + 1) * sizeof(char));
+    strcpy(no->tag, string);
+    no->filho = NULL;
+    no->irmao = NULL;
+    /*meta3*/
+    no->type = NULL;
+    if(info == NULL){
+    	no->line = 0;
+    	no->column = 0;
+    } else {	
+	no->line = info->line;
+	no->column = info->column;
+    }
+    return no;
+}
+
+node criarNoVazio() {
+    node no = (node)malloc(sizeof(tree_node));
+    no->tag = NULL;
+    no->filho = NULL;
+    no->irmao = NULL;
+    /*meta3*/
+    no->type = NULL;
+    no->line = 0;
+    no->column = 0;
+    return no;
+}
+
+node criarNoTerminal(char* string, tokenInfo info) {
+    node no = (node)malloc(sizeof(tree_node));
+    no->tag = (char*)malloc((strlen(string) + strlen(info->nome) + 3) * sizeof(char));
+    sprintf(no->tag, "%s%c%s%c", string, '(', info->nome, ')');
+    no->filho = NULL;
+    no->irmao = NULL;
+    /*meta3*/
+    no->type = NULL;
+    if(info == NULL){
+    	no->line = 0;
+    	no->column = 0;
+    } else {	
+	no->line = info->line;
+	no->column = info->column;
+    }
+    return no;
+}
+
+void criarFilho(node pai, node filho) {
+    if(pai == NULL)
+        return;
+    pai->filho = filho;
+}
+
+void criarIrmao(node a, node b) {
+    if(a == NULL || b == NULL) {
+        return;
+    }
+    while(a->irmao != NULL) {
+        a = a->irmao;
+    }
+    a->irmao = b;
+}
+
+void typeIrmaos(node pai, node type) {
+    if(pai == NULL) {
+        return;
+    }
+    node aux_sib = criarNoVazio();
+    aux_sib->tag = (char*)malloc((strlen(pai->filho->tag) + 1) * sizeof(char)); 
+    strcpy(aux_sib->tag, pai->filho->tag);
+    pai->filho->irmao = aux_sib; /*mover filho para irmao*/
+
+    pai->filho->tag = (char*)malloc((strlen(type->tag) + 1) * sizeof(char));
+    strcpy(pai->filho->tag, type->tag);
+    typeIrmaos(pai->irmao, type);
+}
+
+void printTree(node raiz, int profundidade) {
+    int aux;
+    if(raiz == NULL) {
+        return;
+    }
+    else {
+        for(aux = 0; aux < profundidade; aux++) {
+            printf("..");
+        }
+        printf("%s\n", raiz->tag);
+        
+    }
+    printTree(raiz->filho, profundidade + 1);
+    printTree(raiz->irmao, profundidade);
+
+    free(raiz->tag);
+    free(raiz->filho);
+    free(raiz->irmao);
+    if(profundidade == 0) {
+        free(raiz);
+    }
+}
+
+void freeTree(node raiz) {
+    if(raiz == NULL) {
+        return;
+    }
+    freeTree(raiz->filho);
+    freeTree(raiz->irmao);
+    
+    free(raiz->tag);
+    free(raiz->filho);
+    free(raiz->irmao);
+    free(raiz->type);
+}
+
