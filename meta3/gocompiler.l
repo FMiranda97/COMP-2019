@@ -119,7 +119,6 @@ int main(int argc, char** argv)
 	flag = 't';
 	flagPrintTable = 'y';
 	yyparse();
-	yylex_destroy();
 	if(flagError == 'n') {
 		symTab = startTable();
 		auxSymTab = createSymbolTable("", "");
@@ -128,9 +127,11 @@ int main(int argc, char** argv)
 		if(flagPrintTable == 'y') {
 		    printGTable(symTab);
 		    printTable(auxSymTab);
-		    printAnnotedTree(root, 0);
+		    //printAnnotedTree(root, 0);
 		}
     	}
+	freeTree(root);
+	yylex_destroy();
     }
     return 0; 
 }

@@ -92,13 +92,6 @@ void printTree(node raiz, int profundidade) {
     }
     printTree(raiz->filho, profundidade + 1);
     printTree(raiz->irmao, profundidade);
-
-    free(raiz->tag);
-    free(raiz->filho);
-    free(raiz->irmao);
-    if(profundidade == 0) {
-        free(raiz);
-    }
 }
 
 void freeTree(node raiz) {
