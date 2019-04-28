@@ -34,6 +34,7 @@ escape			"\\r"|"\n"|"\\t"|"\\f"|\\\\|\\\"
 	gTable symTab;
 	table auxSymTab = NULL;
 	char flagError = 'n';
+	char printAST = 'y';
 %}
 
 %%
@@ -47,7 +48,7 @@ escape			"\\r"|"\n"|"\\t"|"\\f"|\\\\|\\\"
 <COMENTARIO>.					{column+=yyleng;}
 <COMENTARIO><<EOF>>				{printf("Line %d, Column %d: unterminated comment\n",aux_line,aux_column); BEGIN 0; emit_semicolon = 0;}
 
-"\""						{BEGIN STR; st = addText(st, yytext, yyleng); aux_line = line; aux_column = column; column+=yyleng;}
+"\""						{BEGIN STRING; st = addText(st, yytext, yyleng); aux_line = line; aux_column = column; column+=yyleng;}
 <STR>\\r|\\n|\\t|\\f|\\\\|\\\"			{st = addText(st, yytext, yyleng); column+=yyleng;}
 <STR>\\"\n"					{printf("Line %d, column %d: invalid escape sequence (\\)\n",line,column); printf("Line %d, column %d: unterminated string literal\n",aux_line,aux_column); 																line++; column = 1; BEGIN 0; ignore_strlit = 'n'; emit_semicolon = 0;}
 <STR>\\[^{num}]					{printf("Line %d, column %d: invalid escape sequence (%s)\n",line,column, yytext); column+=yyleng; free(st); st = NULL; ignore_strlit = 'y'; emit_semicolon = 0;}
@@ -91,7 +92,7 @@ var						{ emit_semicolon = 0; if (flag == 'l') printf("VAR\n");column+=yyleng; 
 int						{ emit_semicolon = 0; if (flag == 'l') printf("INT\n");column+=yyleng; if (flag == 't'){yylval.info = sendInfo(yytext); return INT;}}
 float32						{ emit_semicolon = 0; if (flag == 'l') printf("FLOAT32\n");column+=yyleng; if (flag == 't'){yylval.info = sendInfo(yytext); return FLOAT32;}}	
 bool						{ emit_semicolon = 0; if (flag == 'l') printf("BOOL\n");column+=yyleng; if (flag == 't'){yylval.info = sendInfo(yytext); return BOOL;}}
-string						{ emit_semicolon = 0; if (flag == 'l') printf("STR\n");column+=yyleng; if (flag == 't'){yylval.info = sendInfo(yytext); return STR;}}
+string						{ emit_semicolon = 0; if (flag == 'l') printf("STRING\n");column+=yyleng; if (flag == 't'){yylval.info = sendInfo(yytext); return STRING;}}
 fmt"."Println					{ emit_semicolon = 0; if (flag == 'l') printf("PRINT\n");column+=yyleng; if (flag == 't'){yylval.info = sendInfo(yytext); return PRINT;}}
 strconv"."Atoi					{ emit_semicolon = 0; if (flag == 'l') printf("PARSEINT\n");column+=yyleng; if (flag == 't'){yylval.info = sendInfo(yytext); return PARSEINT;}}
 func						{ emit_semicolon = 0; if (flag == 'l') printf("FUNC\n");column+=yyleng; if (flag == 't'){yylval.info = sendInfo(yytext); return FUNC;}}
@@ -115,6 +116,7 @@ int main(int argc, char** argv)
     else if (flag == 't'){
 	yyparse();
 	yylex_destroy();
+	freeTree(root);
     } else if (flag == 's'){
 	flag = 't';
 	flagPrintTable = 'y';
@@ -122,8 +124,7 @@ int main(int argc, char** argv)
 	if(flagError == 'n') {
 		symTab = startTable();
 		auxSymTab = createSymbolTable("", "");
-		checkSemantics(root, symTab, auxSymTab);
-
+		checkSemantics(root->filho, symTab, auxSymTab);
 		if(flagPrintTable == 'y') {
 		    printGTable(symTab);
 		    printTable(auxSymTab);

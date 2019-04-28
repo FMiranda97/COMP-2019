@@ -1,7 +1,6 @@
 %{
     #include "structs.h"  
     node root;
-    int print = 1;
 %}
 
 %token <info> SEMICOLON
@@ -88,7 +87,7 @@
 
 %%
 
-Program: PACKAGE ID SEMICOLON Declarations	{if(flag == 't'){ root = criarNo("Program", NULL); criarFilho(root, $4); $$ = root; if(print == 1) printTree(root, 0); else freeTree(root);}; }
+Program: PACKAGE ID SEMICOLON Declarations	{if(flag == 't'){ root = criarNo("Program", NULL); criarFilho(root, $4); $$ = root; if(printAST == 'y' && flagPrintTable == 'n') printTree(root, 0); else if (flagPrintTable == 'n') freeTree(root);}; }
 	| PACKAGE ID SEMICOLON			{if(flag == 't'){$$ = criarNoTerminal("Id", $2); free($2);};}
 	;
 
@@ -128,7 +127,7 @@ Parameters: /*empty*/						{if(flag == 't') $$ = criarNo("FuncParams", NULL);}
 	;
 
 //comma id type for parameters
-Cit: Cit COMMA ID Type 						{if(flag == 't'){$$ = criarNo("ParamDecl", NULL); $$->filho = $4; criarIrmao($$->filho, criarNoTerminal("Id", $3)); criarIrmao($$, $1); 																					free($3);};}
+Cit: Cit COMMA ID Type 				{if(flag == 't'){$$ = criarNo("ParamDecl", NULL); $$->filho = $4; criarIrmao($$->filho, criarNoTerminal("Id", $3)); criarIrmao($$, $1); free($3);};}
 	| COMMA ID Type						{if(flag == 't'){$$ = criarNo("ParamDecl", NULL); $$->filho = $3; criarIrmao($$->filho, criarNoTerminal("Id", $2)); free($2);};}
 	;
 		
@@ -155,7 +154,7 @@ Statement: ID ASSIGN Expr 					{if(flag == 't'){$$ = criarNo("Assign", NULL); cr
 	| ParseArgs						{if(flag == 't'){$$ = criarNo("ParseArgs", NULL); criarFilho($$, $1);};}
 	| PRINT LPAR Expr RPAR 					{if(flag == 't'){$$ = criarNo("Print", NULL); criarFilho($$, $3);};}
 	| PRINT LPAR STRLIT RPAR				{if(flag == 't'){$$ = criarNo("Print", NULL); criarFilho($$, criarNoTerminal("Strlit",$3)); free($3);};}
-	| error							{print = 0; if(flag == 't'){$$ = NULL;};}
+	| error							{printAST = 'n'; if(flag == 't'){$$ = NULL;};}
 	;
 
 Block: LBRACE Ss RBRACE						{if(flag == 't'){$$ = criarNo("Block", NULL); criarFilho($$, $2);};}
@@ -173,13 +172,13 @@ Ss: Ss Statement SEMICOLON 					{if(flag == 't'){criarIrmao($1, $2); $$ = $1;};}
 	;
 
 ParseArgs: ID COMMA BLANKID ASSIGN PARSEINT LPAR CMDARGS LSQ Expr RSQ RPAR 	{if(flag == 't'){$$ = criarNoTerminal("Id", $1); free($1); criarIrmao($$, $9);};}
-	| ID COMMA BLANKID ASSIGN PARSEINT LPAR error RPAR			{print = 0; if(flag == 't'){$$ = NULL;};}
+	| ID COMMA BLANKID ASSIGN PARSEINT LPAR error RPAR			{printAST = 'n'; if(flag == 't'){$$ = NULL;};}
 	;
 
 FuncInvocation: ID LPAR RPAR					{if(flag == 't'){$$ = criarNoTerminal("Id", $1); free($1);};}
 	| ID LPAR Expr RPAR					{if(flag == 't'){$$ = criarNoTerminal("Id", $1); free($1); criarIrmao($$, $3);};}
 	| ID LPAR Expr Ce RPAR					{if(flag == 't'){$$ = criarNoTerminal("Id", $1); free($1); criarIrmao($$, $3); criarIrmao($$, $4);};}
-	| ID LPAR error RPAR					{print = 0; if(flag == 't'){$$ = NULL;};}
+	| ID LPAR error RPAR					{printAST = 'n'; if(flag == 't'){$$ = NULL;};}
 	;
 
 //comma expr for funcinvocation
@@ -208,7 +207,7 @@ Expr: Expr OR Expr 						{if(flag == 't'){$$ = criarNo("Or", NULL); criarFilho($
 	| ID							{if(flag == 't'){$$ = criarNoTerminal("Id", $1); free($1);};}
 	| FuncInvocation					{if(flag == 't'){$$ = criarNo("Call", NULL); criarFilho($$, $1);};}
 	| LPAR Expr RPAR					{if(flag == 't'){$$ = $2;};}
-	| LPAR error RPAR 					{print = 0; if(flag == 't'){$$ = NULL;};}
+	| LPAR error RPAR 					{printAST = 'n'; if(flag == 't'){$$ = NULL;};}
 	;
 
 

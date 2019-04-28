@@ -32,6 +32,7 @@ typedef struct _g_sym_table* gTable;
 typedef struct _g_sym_table{
     char* tag;
     char* type;
+    char isVar;
     table params;
     gTable next;
 }g_sym_table;
@@ -51,11 +52,11 @@ tokenInfo sendInfo(char *text);
 
 //table.c functions
 gTable startTable();
-void insertInTable(gTable root, char* tagValue, char* typeValue, table param);
+void insertGTable(gTable root, char* tagValue, char* typeValue, table param, char isVar);
 int searchFuncDec(gTable symTab, char* tagValue, node root);
 table searchFuncDef(table root, char* tagValue);
 table startAuxTable(node tree, table root, char* tagValue, char* tagType);
-void insertInAuxTable(table root, table node);
+void insertInTable(table root, table node);
 table getParamList(node root);
 int checkFuncDec(node root, gTable symTab, table auxSymTab);
 void analiseFuncDec(node root, gTable symTab, table auxSymTab);
@@ -69,7 +70,7 @@ void printParams(table param);
 void printTable(table root);
 char* lowerCase(char* string);
 int checkDeclaration(gTable symTab, char* dec, node root);
-int checkFuncVarDec(table symTab, char* dec, node root);
+int searchVarDec(table symTab, char* dec);
 char* removeId(char* id);
 int checkIfVoid(node root);
 int checkIfParamVoid(node root);
@@ -78,7 +79,7 @@ table removeRepeatedParams(table root);
 char* getFunctionType(char* type, table symTab);
 void annoteFuncBody(node root, gTable symTab, table auxSymTab);
 void checkSemantics(node root, gTable symTab, table auxSymTab);
-gTable createSymbolGTable(char* tagValue, char* typeValue, table fParams);
+gTable createSymbolGTable(char* tagValue, char* typeValue, table fParams, char isVar);
 table createSymbolTable(char* tagValue, char* typeValue);
 
 
@@ -119,7 +120,8 @@ void wrongArguments(int line, int col, char* token, int got, int expected);
 //extern declarations
 extern char flag;
 extern node root;
-
+extern char printAST;
+extern char flagPrintTable;
 
 
 
