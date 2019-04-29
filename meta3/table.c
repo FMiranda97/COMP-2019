@@ -2,7 +2,7 @@
 
 gTable startTable() {
     gTable symTab;
-    symTab = createSymbolGTable("===== Global Symbol Table =====", "", NULL, 'y');
+    symTab = createSymbolGTable("===== Global Symbol Table =====", "", NULL, 't');
     return symTab;
 }
 
@@ -45,9 +45,8 @@ void insertInTable(table raiz, table node) { //insere linha na tabela de uma fun
 }
 
 void checkSemantics(node raiz, gTable symTab, table auxSymtab) {
-    int aux;
     if (raiz == NULL) return;
-    aux = checkFuncDec(raiz, symTab, auxSymtab);
+    checkFuncDec(raiz, symTab, auxSymtab);
     checkSemantics(raiz->irmao, symTab, auxSymtab);
 }
 
@@ -58,11 +57,11 @@ int checkFuncDec(node raiz, gTable symTab, table auxSymTab){//returns 1 if FuncD
 	    analiseFuncDec(raiz, symTab, auxSymTab);
 	    func = createFuncTable(raiz, auxSymTab);
 	    analiseFuncBody(raiz->filho->irmao->filho, symTab, func); //first element of funcbody
-	}
-	return 1;
+	}else erroAlreadyDefined(raiz->filho->filho);
     }else if(strcmp(raiz->tag, "VarDecl") == 0) {
 	if(checkDeclaration(symTab, removeId(raiz->filho->irmao->tag), raiz) == 0)
 	    analiseDec(raiz, symTab);
+	else erroAlreadyDefined(raiz->filho->irmao);
     }
     return 0;
 }
@@ -158,15 +157,13 @@ table startAuxTable(node tree, table raiz, char* tagValue, char* tagType) {
 
 void analiseFuncBody(node raiz, gTable symTab, table auxSymTab) { //auxSymTab is table of this function
     if(raiz == NULL) return;
-    
-    int aux = 1;
-
     if(strcmp(raiz->tag, "VarDecl") == 0) {
         if (searchVarDec(auxSymTab, removeId(raiz->filho->irmao->tag)) == 0)//if var has not been declared yet
 	    insertInTable(auxSymTab, createSymbolTable(removeId(raiz->filho->irmao->tag), lowerCase(raiz->filho->tag)));
+    }else{
+	annoteTree(raiz, symTab, auxSymTab);
+	analiseFuncBody(raiz->filho, symTab, auxSymTab);
     }
-    if(aux && (strcmp(raiz->tag, "Call") != 0))
-        analiseFuncBody(raiz->filho, symTab, auxSymTab);
     analiseFuncBody(raiz->irmao, symTab, auxSymTab);
 }
 
@@ -235,16 +232,16 @@ char* removeId(char* id) {
 void printGTable(gTable raiz) {
     
     if(raiz != NULL) {
-	printf("%s\t\t", raiz->tag);
-	if (raiz->isVar == 'n')//if table header
-	    printf("(");
-	if(raiz->params)
-       	    printParams(raiz->params);
-	if (raiz->isVar == 'n')
-            printf(")\t");
-	printf("%s", raiz->type);
-        
-	
+	if(raiz->isVar != 't'){
+	    printf("%s\t", raiz->tag);
+	    if (raiz->isVar == 'n')//if table header
+		printf("(");
+	    if(raiz->params)
+       		printParams(raiz->params);
+	    if (raiz->isVar == 'n')
+        	printf(")");
+	    printf("\t%s", raiz->type);
+	}else printf("%s", raiz->tag);
         printf("\n");    
         printGTable(raiz->next);
         free(raiz->type);

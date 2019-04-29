@@ -128,10 +128,19 @@ int main(int argc, char** argv)
 		if(flagPrintTable == 'y') {
 		    printGTable(symTab);
 		    printTable(auxSymTab);
-		    //printAnnotedTree(root, 0);
+		    printAnnotedTree(root, 0);
 		}
-    	}
-	freeTree(root);
+    	}else freeTree(root);
+	yylex_destroy();
+    }else{
+	flag = 't';
+	flagPrintTable = 'y';
+	yyparse();
+	if(flagError == 'n') {
+		symTab = startTable();
+		auxSymTab = createSymbolTable("", "");
+		checkSemantics(root->filho, symTab, auxSymTab);
+    	}else freeTree(root);
 	yylex_destroy();
     }
     return 0; 
@@ -141,7 +150,7 @@ tokenInfo sendInfo(char *text){
 	tokenInfo aux = (tokenInfo) malloc(sizeof(info_node));
 	aux->nome = strdup(text);
 	aux->line = line;
-	aux->column = column;
+	aux->column = column - yyleng;
 	return aux;
 }
 

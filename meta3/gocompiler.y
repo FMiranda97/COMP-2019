@@ -127,7 +127,7 @@ Parameters: /*empty*/						{if(flag == 't') $$ = criarNo("FuncParams", NULL);}
 	;
 
 //comma id type for parameters
-Cit: Cit COMMA ID Type 				{if(flag == 't'){$$ = criarNo("ParamDecl", NULL); $$->filho = $4; criarIrmao($$->filho, criarNoTerminal("Id", $3)); criarIrmao($$, $1); free($3);};}
+Cit: COMMA ID Type Cit				{if(flag == 't'){$$ = criarNo("ParamDecl", NULL); $$->filho = $3; criarIrmao($$->filho, criarNoTerminal("Id", $2)); criarIrmao($$, $4); free($2);};}
 	| COMMA ID Type						{if(flag == 't'){$$ = criarNo("ParamDecl", NULL); $$->filho = $3; criarIrmao($$->filho, criarNoTerminal("Id", $2)); free($2);};}
 	;
 		
@@ -153,7 +153,7 @@ Statement: ID ASSIGN Expr 					{if(flag == 't'){$$ = criarNo("Assign", NULL); cr
 	| FuncInvocation 					{if(flag == 't'){$$ = criarNo("Call", NULL); criarFilho($$, $1);};}
 	| ParseArgs						{if(flag == 't'){$$ = criarNo("ParseArgs", NULL); criarFilho($$, $1);};}
 	| PRINT LPAR Expr RPAR 					{if(flag == 't'){$$ = criarNo("Print", NULL); criarFilho($$, $3);};}
-	| PRINT LPAR STRLIT RPAR				{if(flag == 't'){$$ = criarNo("Print", NULL); criarFilho($$, criarNoTerminal("Strlit",$3)); free($3);};}
+	| PRINT LPAR STRLIT RPAR				{if(flag == 't'){$$ = criarNo("Print", NULL); criarFilho($$, criarNoTerminal("StrLit",$3)); free($3);};}
 	| error							{printAST = 'n'; if(flag == 't'){$$ = NULL;};}
 	;
 
@@ -162,7 +162,7 @@ Block: LBRACE Ss RBRACE						{if(flag == 't'){$$ = criarNo("Block", NULL); criar
 	;
 
 Else: ELSE Block						{if(flag == 't'){$$ = $2;};}
-	| 							{if(flag == 't') $$ = NULL;}
+	| 							{if(flag == 't'){$$ = criarNo("Block", NULL);};}
 	;
 
 
@@ -202,8 +202,8 @@ Expr: Expr OR Expr 						{if(flag == 't'){$$ = criarNo("Or", NULL); criarFilho($
 	| NOT Expr 						{if(flag == 't'){$$ = criarNo("Not", NULL); criarFilho($$, $2);};}
 	| MINUS Expr 						{if(flag == 't'){$$ = criarNo("Minus", NULL); criarFilho($$, $2);};}
 	| PLUS Expr 						{if(flag == 't'){$$ = criarNo("Plus", NULL); criarFilho($$, $2);};}
-	| INTLIT 						{if(flag == 't'){$$ = criarNoTerminal("Intlit", $1); free($1);};}
-	| REALLIT						{if(flag == 't'){$$ = criarNoTerminal("Reallit", $1); free($1);};}
+	| INTLIT 						{if(flag == 't'){$$ = criarNoTerminal("IntLit", $1); free($1);};}
+	| REALLIT						{if(flag == 't'){$$ = criarNoTerminal("RealLit", $1); free($1);};}
 	| ID							{if(flag == 't'){$$ = criarNoTerminal("Id", $1); free($1);};}
 	| FuncInvocation					{if(flag == 't'){$$ = criarNo("Call", NULL); criarFilho($$, $1);};}
 	| LPAR Expr RPAR					{if(flag == 't'){$$ = $2;};}
